@@ -1,6 +1,7 @@
 package progmgr
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"encoding/json"
 
 	"msh/lib/config"
 	"msh/lib/errco"
@@ -24,9 +24,8 @@ var (
 
 	// API protocol version - needed by utils.go
 	protv int = 2
-	
-	updAddr string = "https://api.github.com/repos/kinuseka/minecraft-server-hibernation/releases"
 
+	updAddr string = "https://api.github.com/repos/kinuseka/minecraft-server-hibernation/releases"
 
 	// segment used for stats
 	sgm *segment = &segment{
@@ -146,10 +145,10 @@ func sgmMgr() {
 		case <-sgm.end.C:
 			// Check version against GitHub
 			errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "Checking version against GitHub releases...")
-			
+
 			// Create HTTP client with timeout
 			client := &http.Client{Timeout: 10 * time.Second}
-			
+
 			// Create request
 			req, err := http.NewRequest("GET", updAddr, nil)
 			if err != nil {
@@ -157,10 +156,10 @@ func sgmMgr() {
 				sgm.prolong(10 * time.Minute)
 				break mainselect
 			}
-			
+
 			// Add user agent header (GitHub API requires this)
 			req.Header.Add("User-Agent", fmt.Sprintf("MSH/%s", MshVersion))
-			
+
 			// Send request
 			res, err := client.Do(req)
 			if err != nil {
@@ -170,7 +169,7 @@ func sgmMgr() {
 				break mainselect
 			}
 			defer res.Body.Close()
-			
+
 			// Check response status code
 			if res.StatusCode != 200 {
 				body, _ := io.ReadAll(res.Body)
@@ -179,7 +178,7 @@ func sgmMgr() {
 				sgm.prolong(10 * time.Minute)
 				break mainselect
 			}
-			
+
 			// Read and parse response
 			var releases []GitHubRelease
 			if err := json.NewDecoder(res.Body).Decode(&releases); err != nil {
@@ -187,7 +186,7 @@ func sgmMgr() {
 				sgm.prolong(10 * time.Minute)
 				break mainselect
 			}
-			
+
 			// Find latest stable release
 			var latestRelease *GitHubRelease
 			for _, release := range releases {
@@ -195,11 +194,11 @@ func sgmMgr() {
 				if release.Draft || release.Prerelease {
 					continue
 				}
-				
+
 				latestRelease = &release
 				break // First non-draft, non-prerelease is the latest stable
 			}
-			
+
 			if latestRelease == nil {
 				errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION, "No stable releases found on GitHub")
 				sgm.prolong(10 * time.Minute)
@@ -210,16 +209,29 @@ func sgmMgr() {
 				localVersion := strings.TrimPrefix(MshVersion, "v")
 				// GitHub version "v2.6.0" -> "2.6.0"
 				latestVersion := strings.TrimPrefix(latestRelease.TagName, "v")
-				
+
 				errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "Local version: %s, Latest GitHub version: %s", localVersion, latestVersion)
-				
-				// Compare versions (simple string comparison, not semantic versioning)
-				if localVersion < latestVersion {
+
+				// Compare versions using semantic versioning rules
+				isOutdated, isNewer, err := compareVersions(localVersion, latestVersion)
+				if err != nil {
+					// Fallback to string comparison if semantic version parsing fails
+					errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION,
+						"Failed to parse versions semantically: %s. Falling back to string comparison", err.Error())
+
+					if localVersion < latestVersion {
+						isOutdated = true
+					} else if localVersion > latestVersion {
+						isNewer = true
+					}
+				}
+
+				if isOutdated {
 					// Outdated version
 					verCheck := fmt.Sprintf("msh (%s) is outdated. Latest version is %s", MshVersion, latestRelease.TagName)
 					errco.NewLogln(errco.TYPE_WAR, errco.LVL_0, errco.ERROR_VERSION, verCheck)
 					sgm.push.verCheck = verCheck
-				} else if localVersion > latestVersion {
+				} else if isNewer {
 					// Future version
 					verCheck := fmt.Sprintf("msh (%s) is newer than the latest GitHub release (%s)", MshVersion, latestRelease.TagName)
 					errco.NewLogln(errco.TYPE_INF, errco.LVL_1, errco.ERROR_NIL, verCheck)
@@ -231,7 +243,7 @@ func sgmMgr() {
 					sgm.push.verCheck = verCheck
 				}
 			}
-			
+
 			// Reset segment
 			sgm.reset(4 * time.Hour) // Check again in 4 hours
 		}
@@ -290,4 +302,50 @@ func (sgm *segment) prolong(i interface{}) {
 	default:
 		sgm.end.Reset(sgm.defDur)
 	}
+}
+
+// compareVersions implements semantic versioning comparison
+// Returns (isOutdated, isNewer, error)
+func compareVersions(version1, version2 string) (bool, bool, error) {
+	// Split version strings into components (major.minor.patch)
+	v1Parts := strings.Split(version1, ".")
+	v2Parts := strings.Split(version2, ".")
+
+	// Check that we have at least major version component
+	if len(v1Parts) == 0 || len(v2Parts) == 0 {
+		return false, false, fmt.Errorf("invalid version format")
+	}
+
+	// Compare components one by one (major, minor, patch)
+	for i := 0; i < 3; i++ {
+		// Get components or default to 0 if not present
+		var v1Comp, v2Comp int
+		var err error
+
+		if i < len(v1Parts) {
+			v1Comp, err = strconv.Atoi(v1Parts[i])
+			if err != nil {
+				return false, false, fmt.Errorf("invalid version component %s: %v", v1Parts[i], err)
+			}
+		}
+
+		if i < len(v2Parts) {
+			v2Comp, err = strconv.Atoi(v2Parts[i])
+			if err != nil {
+				return false, false, fmt.Errorf("invalid version component %s: %v", v2Parts[i], err)
+			}
+		}
+
+		// Compare numerically
+		if v1Comp < v2Comp {
+			return true, false, nil // version1 is outdated
+		} else if v1Comp > v2Comp {
+			return false, true, nil // version1 is newer
+		}
+
+		// If equal, continue to next component
+	}
+
+	// All components are equal
+	return false, false, nil
 }
