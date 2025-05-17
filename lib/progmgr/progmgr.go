@@ -21,7 +21,7 @@ COMMIT COLLECTION
 var (
 	MshVersion       string = "v2.6.0"  // msh version
 	MshCommit        string = "-------" // msh commit
-	IsPrerelease     bool   = false     // if its a prerelease
+	IsPrerelease     bool   = true      // if its a prerelease
 	PrereleaseSuffix string = "alpha 1"
 
 	// msh program
