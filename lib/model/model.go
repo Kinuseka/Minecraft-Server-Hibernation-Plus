@@ -34,6 +34,9 @@ type Configuration struct {
 		WhitelistImport               bool     `json:"WhitelistImport"`
 		ShowResourceUsage             bool     `json:"ShowResourceUsage"`
 		ShowInternetUsage             bool     `json:"ShowInternetUsage"`
+		PassthroughProtocol           bool     `json:"PassthroughProtocol"` // specify if msh should forward unknown protocols to the server
+		AllowForeignPacket            [][]byte `json:"AllowForeignPacket"`  // list of specific packet byte arrays that should be allowed/forwarded
+		RejectForeignPacket           [][]byte `json:"RejectForeignPacket"` // list of specific packet byte arrays that should be rejected
 	} `json:"Msh"`
 }
 

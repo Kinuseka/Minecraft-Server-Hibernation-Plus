@@ -164,6 +164,16 @@ _for debug purposes (debug level 3 required)_
 "ShowInternetUsage": false
 ```
 
+Foreign protocol handling allows specific custom protocols (like Automodpack) to be forwarded to the server  
+PassthroughProtocol: Forward unknown protocols to the server when true  
+AllowForeignPacket: List of byte arrays that should be allowed/forwarded regardless of PassthroughProtocol  
+RejectForeignPacket: List of byte arrays that should be rejected regardless of PassthroughProtocol  
+```yaml
+"PassthroughProtocol": false
+"AllowForeignPacket": [[65, 77, 77, 67]]  # Automodpack ("AMMC" in ASCII)
+"RejectForeignPacket": []
+```
+
 -----
 ### CREDITS:  
 

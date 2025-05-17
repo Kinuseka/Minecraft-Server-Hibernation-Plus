@@ -59,6 +59,7 @@ const (
 	CLIENT_REQ_UNKN     = 0x020000 // client request unknown
 	CLIENT_REQ_INFO     = 0x020001 // client request server info
 	CLIENT_REQ_JOIN     = 0x020002 // client request server join
+	CLIENT_REQ_FOREIGN  = 0x020003 // client request using foreign/custom protocol
 	MESSAGE_FORMAT_TXT  = 0x020103 // message to client should be built as TXT
 	MESSAGE_FORMAT_INFO = 0x020104 // message to client should be built as INFO
 )

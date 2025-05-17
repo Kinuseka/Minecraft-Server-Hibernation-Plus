@@ -159,9 +159,34 @@ func getReqType(clientConn net.Conn) ([]byte, int, *errco.MshLog) {
 
 		return dataReqFull, errco.CLIENT_REQ_JOIN, nil
 
+	// check for foreign protocols
+	case isForeignProtocol(dataReqFull):
+		errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "detected foreign protocol packet: %v", dataReqFull)
+		return dataReqFull, errco.CLIENT_REQ_FOREIGN, nil
+
 	default:
 		return nil, errco.CLIENT_REQ_UNKN, errco.NewLog(errco.TYPE_ERR, errco.LVL_3, errco.ERROR_CLIENT_REQ, "client request unknown (received: %v)", dataReqFull)
 	}
+}
+
+// isForeignProtocol checks if the packet is a recognized foreign protocol based on config settings
+func isForeignProtocol(packet []byte) bool {
+	// Check if packet is in AllowForeignPacket list
+	for _, allowedPacket := range config.ConfigRuntime.Msh.AllowForeignPacket {
+		if bytes.Equal(packet, allowedPacket) {
+			return true
+		}
+	}
+
+	// Check if packet is in RejectForeignPacket list
+	for _, rejectedPacket := range config.ConfigRuntime.Msh.RejectForeignPacket {
+		if bytes.Equal(packet, rejectedPacket) {
+			return false
+		}
+	}
+
+	// If PassthroughProtocol is enabled and packet is not specifically rejected
+	return config.ConfigRuntime.Msh.PassthroughProtocol
 }
 
 // getPing performs msh PING response to the client PING request

@@ -74,15 +74,17 @@ func HandlerClientConn(clientConn net.Conn) {
 
 			// msh INFO response
 			var mes []byte
-			switch servstats.Stats.Status {
-			case errco.SERVER_STATUS_OFFLINE:
+			switch {
+			case servstats.Stats.Status == errco.SERVER_STATUS_SUSPENDED || servstats.Stats.Suspended:
+				mes = buildMessage(reqType, config.ConfigRuntime.Msh.InfoSuspended)
+			case servstats.Stats.Status == errco.SERVER_STATUS_OFFLINE:
 				mes = buildMessage(reqType, config.ConfigRuntime.Msh.InfoHibernation)
-			case errco.SERVER_STATUS_STARTING:
+			case servstats.Stats.Status == errco.SERVER_STATUS_STARTING:
 				mes = buildMessage(reqType, config.ConfigRuntime.Msh.InfoStarting)
-			case errco.SERVER_STATUS_ONLINE: // ms suspended
-				mes = buildMessage(reqType, config.ConfigRuntime.Msh.InfoHibernation)
-			case errco.SERVER_STATUS_STOPPING:
+			case servstats.Stats.Status == errco.SERVER_STATUS_STOPPING:
 				mes = buildMessage(reqType, "server is stopping...\nrefresh the page")
+			default:
+				mes = buildMessage(reqType, config.ConfigRuntime.Msh.InfoHibernation)
 			}
 			clientConn.Write(mes)
 			errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
@@ -160,6 +162,19 @@ func HandlerClientConn(clientConn net.Conn) {
 
 			// open proxy between client and server
 			openProxy(clientConn, reqPacket, errco.CLIENT_REQ_JOIN)
+		}
+
+	case errco.CLIENT_REQ_FOREIGN:
+		errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "a client sent a foreign protocol request from %s:%d to %s:%d", clientAddress, config.MshPort, config.ServHost, config.ServPort)
+
+		// Check server status - only forward to online servers
+		if servstats.Stats.Status == errco.SERVER_STATUS_ONLINE {
+			// Open proxy between client and server for the foreign protocol
+			openProxy(clientConn, reqPacket, errco.CLIENT_REQ_FOREIGN)
+		} else {
+			// Cannot process foreign protocol requests when server is offline
+			errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_NIL, "cannot process foreign protocol when server is offline")
+			clientConn.Close()
 		}
 
 	default:

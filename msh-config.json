@@ -30,6 +30,9 @@
     "Whitelist": [],
     "WhitelistImport": false,
     "ShowResourceUsage": false,
-    "ShowInternetUsage": false
+    "ShowInternetUsage": false,
+    "PassthroughProtocol": true,
+    "AllowForeignPacket": [[65, 77, 77, 67]],
+    "RejectForeignPacket": []
   }
 }
