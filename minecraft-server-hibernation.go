@@ -20,11 +20,18 @@ var intro []string = []string{
 	"| '_ ` _ \\/ __| '_ \\  |_   _|",
 	"| | | | | \\__ \\ | | |   |_|",
 	"|_| |_| |_|___/_| |_|        ",
-	"      " + progmgr.MshVersion,
+	"      " + progmgr.MshVersion + func() string {
+		if progmgr.IsPrerelease {
+			return " " + progmgr.PrereleaseSuffix
+		} else {
+			return ""
+		}
+	}(),
 	"      " + progmgr.MshCommit,
 	"forked by: kinuseka  (by gekigek99)",
 	"github: https://github.com/kinuseka",
 }
+
 func main() {
 	// print program intro
 	// not using errco.NewLogln since log time is not needed
