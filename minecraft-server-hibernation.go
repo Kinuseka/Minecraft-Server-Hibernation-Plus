@@ -15,15 +15,16 @@ import (
 
 // contains intro to script and program
 var intro []string = []string{
-	" _ __ ___  ___| |__  ",
-	"| '_ ` _ \\/ __| '_ \\ ",
-	"| | | | | \\__ \\ | | | " + progmgr.MshVersion,
-	"|_| |_| |_|___/_| |_| " + progmgr.MshCommit,
-	"Copyright (C) 2019-2023 gekigek99",
-	"github: https://github.com/gekigek99",
-	"remember to give a star to this repository!",
+	"              | |        _   ",
+	" _ __ ___  ___| |__    _| |_ ",
+	"| '_ ` _ \\/ __| '_ \\  |_   _|",
+	"| | | | | \\__ \\ | | |   |_|",
+	"|_| |_| |_|___/_| |_|        ",
+	"      " + progmgr.MshVersion,
+	"      " + progmgr.MshCommit,
+	"forked by: kinuseka  (by gekigek99)",
+	"github: https://github.com/kinuseka",
 }
-
 func main() {
 	// print program intro
 	// not using errco.NewLogln since log time is not needed
