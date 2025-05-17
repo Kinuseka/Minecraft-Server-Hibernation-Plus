@@ -22,7 +22,7 @@ var (
 	MshVersion       string = "v2.6.0"  // msh version
 	MshCommit        string = "-------" // msh commit
 	IsPrerelease     bool   = true      // if its a prerelease
-	PrereleaseSuffix string = "alpha 1"
+	PrereleaseSuffix string = "alpha 2"
 
 	// msh program
 	msh *program = &program{
