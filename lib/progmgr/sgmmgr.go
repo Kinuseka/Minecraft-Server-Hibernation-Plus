@@ -5,8 +5,10 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+	"encoding/json"
 
 	"msh/lib/config"
 	"msh/lib/errco"
@@ -20,8 +22,11 @@ var (
 	// ReqSent communicates to main func that the first request is completed and msh can continue
 	ReqSent chan bool = make(chan bool, 1)
 
-	protv   int    = 2                                                              // api protocol version
-	updAddr string = fmt.Sprintf("https://msh.gekware.net/api/v%d/versions", protv) // server address to get version info
+	// API protocol version - needed by utils.go
+	protv int = 2
+	
+	updAddr string = "https://api.github.com/repos/kinuseka/minecraft-server-hibernation/releases"
+
 
 	// segment used for stats
 	sgm *segment = &segment{
@@ -30,6 +35,14 @@ var (
 		defDur: 4 * time.Hour,
 	}
 )
+
+// GitHub release structure
+type GitHubRelease struct {
+	TagName    string `json:"tag_name"`
+	Name       string `json:"name"`
+	Prerelease bool   `json:"prerelease"`
+	Draft      bool   `json:"draft"`
+}
 
 type segment struct {
 	m *sync.Mutex // segment mutex (initialized with sgm and not affected by reset function)
@@ -62,6 +75,14 @@ type segment struct {
 func sgmMgr() {
 	// initialize sgm variables
 	sgm.reset(0) // segment duration initialized to 0 so that the first request can be executed immediately
+
+	// Signal main thread to continue immediately, don't wait for version check to complete
+	select {
+	case ReqSent <- true:
+		errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "Sent ready signal to main thread")
+	default:
+		errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_NIL, "ReqSent channel already has a value")
+	}
 
 	for {
 	mainselect:
@@ -123,93 +144,96 @@ func sgmMgr() {
 
 		// send request when segment ends
 		case <-sgm.end.C:
-			// send request
-			res, logMsh := sendApi2Req(updAddr, buildApi2Req(false))
-			if logMsh != nil {
-				logMsh.Log(true)
+			// Check version against GitHub
+			errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "Checking version against GitHub releases...")
+			
+			// Create HTTP client with timeout
+			client := &http.Client{Timeout: 10 * time.Second}
+			
+			// Create request
+			req, err := http.NewRequest("GET", updAddr, nil)
+			if err != nil {
+				errco.NewLogln(errco.TYPE_ERR, errco.LVL_3, errco.ERROR_VERSION, "Failed to create request: %s", err.Error())
 				sgm.prolong(10 * time.Minute)
 				break mainselect
 			}
-
-			// check response status code
-			switch res.StatusCode {
-			case 200:
-				errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "segment reset")
-				sgm.reset(res)
-			case 403:
-				errco.NewLogln(errco.TYPE_WAR, errco.LVL_0, errco.ERROR_VERSION, "client is unauthorized, issuing msh termination")
-				AutoTerminate()
-			default:
-				body, err := io.ReadAll(res.Body)
-				if err != nil {
-					errco.NewLogln(errco.TYPE_ERR, errco.LVL_3, errco.ERROR_BODY_READ, err.Error())
-				}
-
-				errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION, "response status code is %s [ %s ] -> prolonging segment...", res.Status, body)
-				sgm.prolong(res)
+			
+			// Add user agent header (GitHub API requires this)
+			req.Header.Add("User-Agent", fmt.Sprintf("MSH/%s", MshVersion))
+			
+			// Send request
+			res, err := client.Do(req)
+			if err != nil {
+				errco.NewLogln(errco.TYPE_ERR, errco.LVL_3, errco.ERROR_VERSION, "Failed to connect to GitHub API: %s", err.Error())
+				errco.NewLogln(errco.TYPE_INF, errco.LVL_1, errco.ERROR_NIL, "Current version is probably a future one or couldn't check")
+				sgm.prolong(10 * time.Minute)
 				break mainselect
 			}
-
-			// get server response into struct
-			resJson, logMsh := readApi2Res(res)
-			if logMsh != nil {
-				logMsh.Log(true)
+			defer res.Body.Close()
+			
+			// Check response status code
+			if res.StatusCode != 200 {
+				body, _ := io.ReadAll(res.Body)
+				errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION, "GitHub API returned status %d: %s", res.StatusCode, string(body))
+				errco.NewLogln(errco.TYPE_INF, errco.LVL_1, errco.ERROR_NIL, "Current version is probably a future one or couldn't check")
+				sgm.prolong(10 * time.Minute)
 				break mainselect
 			}
-
-			// check version result
-			switch resJson.Result {
-			case "dep": // local version deprecated
-				// don't check NotifyUpdate
-				verCheck := fmt.Sprintf("msh (%s) is deprecated: visit github to update to %s!", MshVersion, resJson.Official.V)
-				errco.NewLogln(errco.TYPE_WAR, errco.LVL_0, errco.ERROR_VERSION, verCheck)
-				sgm.push.verCheck = verCheck
-
-				// override ConfigRuntime variables to display deprecated error message in motd
-				config.ConfigRuntime.Msh.InfoHibernation = "                   §fserver status:\n                   §b§lHIBERNATING\n                   §b§cmsh version DEPRECATED"
-				config.ConfigRuntime.Msh.InfoStarting = "                   §fserver status:\n                    §6§lWARMING UP\n                   §b§cmsh version DEPRECATED"
-
-			case "upd": // local version to update
-				if config.ConfigRuntime.Msh.NotifyUpdate {
-					verCheck := fmt.Sprintf("msh (%s) can be updated: visit github to update to %s!", MshVersion, resJson.Official.V)
+			
+			// Read and parse response
+			var releases []GitHubRelease
+			if err := json.NewDecoder(res.Body).Decode(&releases); err != nil {
+				errco.NewLogln(errco.TYPE_ERR, errco.LVL_3, errco.ERROR_VERSION, "Failed to parse GitHub API response: %s", err.Error())
+				sgm.prolong(10 * time.Minute)
+				break mainselect
+			}
+			
+			// Find latest stable release
+			var latestRelease *GitHubRelease
+			for _, release := range releases {
+				// Skip drafts and prereleases
+				if release.Draft || release.Prerelease {
+					continue
+				}
+				
+				latestRelease = &release
+				break // First non-draft, non-prerelease is the latest stable
+			}
+			
+			if latestRelease == nil {
+				errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION, "No stable releases found on GitHub")
+				sgm.prolong(10 * time.Minute)
+				// Continue execution instead of breaking
+			} else {
+				// Clean up version strings for comparison
+				// Local version "v2.6.0" -> "2.6.0"
+				localVersion := strings.TrimPrefix(MshVersion, "v")
+				// GitHub version "v2.6.0" -> "2.6.0"
+				latestVersion := strings.TrimPrefix(latestRelease.TagName, "v")
+				
+				errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "Local version: %s, Latest GitHub version: %s", localVersion, latestVersion)
+				
+				// Compare versions (simple string comparison, not semantic versioning)
+				if localVersion < latestVersion {
+					// Outdated version
+					verCheck := fmt.Sprintf("msh (%s) is outdated. Latest version is %s", MshVersion, latestRelease.TagName)
 					errco.NewLogln(errco.TYPE_WAR, errco.LVL_0, errco.ERROR_VERSION, verCheck)
 					sgm.push.verCheck = verCheck
-				}
-
-			case "off": // local version is official
-				if config.ConfigRuntime.Msh.NotifyUpdate {
-					verCheck := fmt.Sprintf("msh (%s) is updated", MshVersion)
-					errco.NewLogln(errco.TYPE_INF, errco.LVL_0, errco.ERROR_NIL, verCheck)
+				} else if localVersion > latestVersion {
+					// Future version
+					verCheck := fmt.Sprintf("msh (%s) is newer than the latest GitHub release (%s)", MshVersion, latestRelease.TagName)
+					errco.NewLogln(errco.TYPE_INF, errco.LVL_1, errco.ERROR_NIL, verCheck)
 					sgm.push.verCheck = verCheck
-				}
-
-			case "dev": // local version is a developement version
-				if config.ConfigRuntime.Msh.NotifyUpdate {
-					verCheck := fmt.Sprintf("msh (%s) is running a dev release", MshVersion)
-					errco.NewLogln(errco.TYPE_WAR, errco.LVL_0, errco.ERROR_VERSION, verCheck)
+				} else {
+					// Current version
+					verCheck := fmt.Sprintf("msh (%s) is up to date", MshVersion)
+					errco.NewLogln(errco.TYPE_INF, errco.LVL_1, errco.ERROR_NIL, verCheck)
 					sgm.push.verCheck = verCheck
-				}
-
-			case "uno": // local version is unofficial
-				if config.ConfigRuntime.Msh.NotifyUpdate {
-					verCheck := fmt.Sprintf("msh (%s) is running an unofficial release", MshVersion)
-					errco.NewLogln(errco.TYPE_WAR, errco.LVL_0, errco.ERROR_VERSION, verCheck)
-					sgm.push.verCheck = verCheck
-				}
-
-			default: // an error occurred
-				if config.ConfigRuntime.Msh.NotifyUpdate {
-					errco.NewLogln(errco.TYPE_ERR, errco.LVL_3, errco.ERROR_VERSION, "invalid version result from server")
 				}
 			}
-
-			// log response messages
-			if config.ConfigRuntime.Msh.NotifyMessage {
-				for _, m := range resJson.Messages {
-					errco.NewLogln(errco.TYPE_INF, errco.LVL_0, errco.ERROR_NIL, "message from the moon: %s", m)
-				}
-				sgm.push.messages = append(sgm.push.messages, resJson.Messages...)
-			}
+			
+			// Reset segment
+			sgm.reset(4 * time.Hour) // Check again in 4 hours
 		}
 	}
 }
