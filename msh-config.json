@@ -13,7 +13,7 @@
   },
   "Msh": {
     "Debug": 1,
-    "ID": "c01d180df4373a1fe28b1ffb477f7a91b3c30ea6",
+    "ID": "",
     "MshPort": 25555,
     "MshPortQuery": 25555,
     "EnableQuery": true,
@@ -22,7 +22,7 @@
     "SuspendAllow": false,
     "SuspendRefresh": -1,
     "InfoHibernation": "§fServer Status: §b§lHIBERNATING\n&l&aJoin to wake it up",
-    "InfoStarting": "§fserver status:  §6§lWARMING UP\n&l&cWait for awhile as we boot up",
+    "InfoStarting": "§fServer Status:  §6§lWARMING UP\n&l&cWait for awhile as we boot up",
     "InfoSuspended": "§fServer Status: &a&lSLEEPING\n&l&aAvailable to join!",
     "NotifyUpdate": true,
     "NotifyMessage": true,
