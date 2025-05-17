@@ -134,6 +134,8 @@ func CheckMSWarm() *errco.MshLog {
 		return errco.NewLog(errco.TYPE_ERR, errco.LVL_2, errco.ERROR_SERVER_UNRESPONDING, "minecraft server not responding")
 	case !ServTerm.IsActive:
 		return errco.NewLog(errco.TYPE_ERR, errco.LVL_2, errco.ERROR_TERMINAL_NOT_ACTIVE, "minecraft server terminal not active")
+	case servstats.Stats.Status == errco.SERVER_STATUS_SUSPENDED:
+		return errco.NewLog(errco.TYPE_ERR, errco.LVL_2, errco.ERROR_SERVER_SUSPENDED, "minecraft server is suspended")
 	case servstats.Stats.Status != errco.SERVER_STATUS_ONLINE:
 		return errco.NewLog(errco.TYPE_ERR, errco.LVL_2, errco.ERROR_SERVER_NOT_ONLINE, "minecraft server not online")
 	case servstats.Stats.Suspended:

@@ -37,6 +37,17 @@ func WarmMS() *errco.MshLog {
 			return logMsh.AddTrace()
 		}
 
+	case errco.SERVER_STATUS_SUSPENDED:
+		// Server is suspended, resume it
+		if config.ConfigRuntime.Msh.SuspendAllow {
+			servstats.Stats.Suspended, logMsh = opsys.ProcTreeResume(uint32(ServTerm.cmd.Process.Pid))
+			if logMsh != nil {
+				return logMsh.AddTrace()
+			}
+			// Update server status back to online
+			servstats.Stats.Status = errco.SERVER_STATUS_ONLINE
+		}
+
 	default:
 		if config.ConfigRuntime.Msh.SuspendAllow {
 			servstats.Stats.Suspended, logMsh = opsys.ProcTreeResume(uint32(ServTerm.cmd.Process.Pid))
@@ -132,6 +143,8 @@ func FreezeMS(force bool) *errco.MshLog {
 			if logMsh != nil {
 				return logMsh.AddTrace()
 			}
+			// Update server status to suspended
+			servstats.Stats.Status = errco.SERVER_STATUS_SUSPENDED
 		} else {
 			// resume and stop ms
 			logMsh = resumeStopMS()

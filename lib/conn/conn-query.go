@@ -206,6 +206,8 @@ func statsRespBase(connCli net.PacketConn, addr net.Addr, sessionID []byte) {
 	mshPortSmallEndian := utility.Reverse(big.NewInt(int64(config.MshPort)).Bytes())
 	var motd string
 	switch {
+	case servstats.Stats.Status == errco.SERVER_STATUS_SUSPENDED:
+		motd = config.ConfigRuntime.Msh.InfoSuspended
 	case servstats.Stats.Suspended:
 		motd = config.ConfigRuntime.Msh.InfoSuspended
 	case servstats.Stats.Status == errco.SERVER_STATUS_OFFLINE:
@@ -241,6 +243,8 @@ func statsRespFull(connCli net.PacketConn, addr net.Addr, sessionID []byte) {
 	levelName, _ := config.ConfigRuntime.ParsePropertiesString("level-name")
 	var motd string
 	switch {
+	case servstats.Stats.Status == errco.SERVER_STATUS_SUSPENDED:
+		motd = config.ConfigRuntime.Msh.InfoSuspended
 	case servstats.Stats.Suspended:
 		motd = config.ConfigRuntime.Msh.InfoSuspended
 	case servstats.Stats.Status == errco.SERVER_STATUS_OFFLINE:
