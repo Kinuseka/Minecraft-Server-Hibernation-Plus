@@ -171,21 +171,7 @@ func getReqType(clientConn net.Conn) ([]byte, int, *errco.MshLog) {
 
 // isForeignProtocol checks if the packet is a recognized foreign protocol based on config settings
 func isForeignProtocol(packet []byte) bool {
-	// Check if packet is in AllowForeignPacket list
-	for _, allowedPacket := range config.ConfigRuntime.Msh.AllowForeignPacket {
-		if bytes.Equal(packet, allowedPacket) {
-			return true
-		}
-	}
-
-	// Check if packet is in RejectForeignPacket list
-	for _, rejectedPacket := range config.ConfigRuntime.Msh.RejectForeignPacket {
-		if bytes.Equal(packet, rejectedPacket) {
-			return false
-		}
-	}
-
-	// If PassthroughProtocol is enabled and packet is not specifically rejected
+	// Simple on/off switch for PassthroughProtocol
 	return config.ConfigRuntime.Msh.PassthroughProtocol
 }
 

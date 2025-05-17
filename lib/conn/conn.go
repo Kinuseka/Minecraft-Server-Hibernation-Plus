@@ -106,27 +106,57 @@ func HandlerClientConn(clientConn net.Conn) {
 	case errco.CLIENT_REQ_JOIN:
 		errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "a client tried to join from %s:%d to %s:%d", clientAddress, config.MshPort, config.ServHost, config.ServPort)
 
-		if servstats.Stats.Status != errco.SERVER_STATUS_ONLINE {
-			// ms not online (un/suspended)
+		// Check for whitelist first as it applies in all cases
+		// check if the request packet contains element of whitelist or the address is in whitelist
+		logMsh := config.ConfigRuntime.IsWhitelist(reqPacket, clientAddress)
+		if logMsh != nil {
+			logMsh.Log(true)
+
+			// Close connection later
+			defer func() {
+				errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "closing connection for: %s", clientAddress)
+				clientConn.Close()
+			}()
+
+			// msh JOIN response (warn client with text in the loadscreen)
+			mes := buildMessage(reqType, "You don't have permission to warm this server")
+			clientConn.Write(mes)
+			errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
+
+			return
+		}
+
+		// Check server status
+		switch {
+		case servstats.Stats.Status == errco.SERVER_STATUS_SUSPENDED || servstats.Stats.Suspended:
+			// Server is suspended, just warm it and establish proxy
+			logMsh = servctrl.WarmMS()
+			if logMsh != nil {
+				// Close connection on error
+				defer func() {
+					errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "closing connection for: %s", clientAddress)
+					clientConn.Close()
+				}()
+
+				// msh JOIN response (warn client with text in the loadscreen)
+				logMsh.Log(true)
+				mes := buildMessage(reqType, "An error occurred while warming the server: check the msh log")
+				clientConn.Write(mes)
+				errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
+				return
+			}
+
+			// Open proxy connection to the now resumed server
+			openProxy(clientConn, reqPacket, errco.CLIENT_REQ_JOIN)
+
+		case servstats.Stats.Status != errco.SERVER_STATUS_ONLINE:
+			// Server is offline or starting/stopping, need to warm it first
 
 			defer func() {
 				// close the client connection before returning
 				errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "closing connection for: %s", clientAddress)
 				clientConn.Close()
 			}()
-
-			// check if the request packet contains element of whitelist or the address is in whitelist
-			logMsh := config.ConfigRuntime.IsWhitelist(reqPacket, clientAddress)
-			if logMsh != nil {
-				logMsh.Log(true)
-
-				// msh JOIN response (warn client with text in the loadscreen)
-				mes := buildMessage(reqType, "You don't have permission to warm this server")
-				clientConn.Write(mes)
-				errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
-
-				return
-			}
 
 			// issue warm
 			logMsh = servctrl.WarmMS()
@@ -136,7 +166,6 @@ func HandlerClientConn(clientConn net.Conn) {
 				mes := buildMessage(reqType, "An error occurred while warming the server: check the msh log")
 				clientConn.Write(mes)
 				errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
-
 				return
 			}
 
@@ -145,18 +174,23 @@ func HandlerClientConn(clientConn net.Conn) {
 			clientConn.Write(mes)
 			errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
 
-		} else {
-			// ms online (un/suspended)
+		default:
+			// Server is online and not suspended
 
-			// issue warm
+			// issue warm to ensure processes are running (might need resume)
 			logMsh = servctrl.WarmMS()
 			if logMsh != nil {
+				// Close connection on error
+				defer func() {
+					errco.NewLogln(errco.TYPE_INF, errco.LVL_3, errco.ERROR_NIL, "closing connection for: %s", clientAddress)
+					clientConn.Close()
+				}()
+
 				// msh JOIN response (warn client with text in the loadscreen)
 				logMsh.Log(true)
 				mes := buildMessage(reqType, "An error occurred while warming the server: check the msh log")
 				clientConn.Write(mes)
 				errco.NewLogln(errco.TYPE_BYT, errco.LVL_4, errco.ERROR_NIL, "%smsh --> client%s: %v", errco.COLOR_PURPLE, errco.COLOR_RESET, mes)
-
 				return
 			}
 
