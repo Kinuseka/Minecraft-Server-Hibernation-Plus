@@ -9,7 +9,8 @@
     "StartServer": "java <Commands.StartServerParam> -jar <Server.FileName> nogui",
     "StartServerParam": "-Xmx1024M -Xms1024M",
     "StopServer": "stop",
-    "StopServerAllowKill": 10
+    "StopServerAllowKill": 10,
+    "ListCommand": "list"
   },
   "Msh": {
     "Debug": 1,

@@ -13,6 +13,7 @@ type Configuration struct {
 		StartServerParam    string `json:"StartServerParam"`
 		StopServer          string `json:"StopServer"`
 		StopServerAllowKill int    `json:"StopServerAllowKill"`
+		ListCommand         string `json:"ListCommand"`
 	} `json:"Commands"`
 	Msh struct {
 		Debug                         int      `json:"Debug"`
