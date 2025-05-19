@@ -117,6 +117,11 @@ TimeBeforeStoppingEmptyServer sets the time (after the last player disconnected)
 "TimeBeforeStoppingEmptyServer": 30
 ```
 
+ConnectionTimeoutSeconds sets the timeout for client connections in seconds. This determines how long a connection can be idle before being closed. You need to set this at a generous amount (e.g. 300 seconds) this if your clients gets randomly kicked off due to timeout, or using heavy mods which takes awhile to load
+```yaml
+"ConnectionTimeoutSeconds": 60
+```
+
 SuspendAllow enables msh to suspend minecraft server process when there are no players online  
 _To mitigate ram usage you can set a high swappiness (on linux)_  
 - pro:  player wait time to join frozen server is ~0  
@@ -139,8 +144,9 @@ SuspendRefresh enables refresh of minecraft server suspension every set seconds 
 
 Hibernation and Starting server description
 ```yaml
-"InfoHibernation": "                   §fserver status:\n                   §b§lHIBERNATING"
-"InfoStarting": "                   §fserver status:\n                    §6§lWARMING UP"
+"InfoHibernation": "§fServer Status: §b§lHIBERNATING\n&l&aJoin to wake it up"
+"InfoStarting": "§fServer Status:  §6§lWARMING UP\n&l&cWait for awhile as we boot up"
+"InfoSuspended": "§fServer Status: &a&lSLEEPING\n&l&aAvailable to join!"
 ```
 
 Set to false if you don't want notifications (every 20 minutes)
@@ -169,8 +175,7 @@ _for debug purposes (debug level 3 required)_
 "ShowInternetUsage": false
 ```
 
-Foreign protocol handling allows specific custom protocols (like Automodpack) to be forwarded to the server  
-PassthroughProtocol: Simple on/off switch that determines whether unknown protocols are forwarded to the server  
+PassthroughProtocol enable this if you're having issues with mods/server that modify how clients are authenticated. This is needed especially for automodpack that sends its own custom packets during the login phase.
 ```yaml
 "PassthroughProtocol": false
 ```
