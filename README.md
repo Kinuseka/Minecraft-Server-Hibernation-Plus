@@ -1,37 +1,42 @@
-# Minecraft Server Hibernation  
+# Minecraft Server Hibernation Plus (MSH+)  
 
-[![msh - loc](https://tokei.rs/b1/github/gekware/minecraft-server-hibernation)](https://github.com/gekware/minecraft-server-hibernation)
-[![msh - release](https://img.shields.io/github/release/gekware/minecraft-server-hibernation?color=05aefc)](https://github.com/gekware/minecraft-server-hibernation/releases)
-[![msh - goreport](https://goreportcard.com/badge/github.com/gekware/minecraft-server-hibernation)](https://goreportcard.com/report/github.com/gekware/minecraft-server-hibernation)
-[![msh - license](https://img.shields.io/github/license/gekware/minecraft-server-hibernation?color=6fff00)](https://github.com/gekware/minecraft-server-hibernation/blob/master/LICENSE)
-[![msh - stars](https://img.shields.io/github/stars/gekware/minecraft-server-hibernation?color=ffbd19)](https://github.com/gekware/minecraft-server-hibernation/stargazers)
+[![msh - loc](https://tokei.rs/b1/github/kinuseka/minecraft-server-hibernation)](https://github.com/kinuseka/minecraft-server-hibernation)
+[![msh - release](https://img.shields.io/github/release/kinuseka/minecraft-server-hibernation?color=05aefc)](https://github.com/kinuseka/minecraft-server-hibernation/releases)
+[![msh - goreport](https://goreportcard.com/badge/github.com/kinuseka/minecraft-server-hibernation)](https://goreportcard.com/report/github.com/kinuseka/minecraft-server-hibernation)
+[![msh - license](https://img.shields.io/github/license/kinuseka/minecraft-server-hibernation?color=6fff00)](https://github.com/kinuseka/minecraft-server-hibernation/blob/master/LICENSE)
+[![msh - stars](https://img.shields.io/github/stars/kinuseka/minecraft-server-hibernation?color=ffbd19)](https://github.com/kinuseka/minecraft-server-hibernation/stargazers)
+
+MSH+ is an independent fork of the original Minecraft Server Hibernation project. This fork was created primarily to address my personal needs and specific use cases (like flexibility for modded servers). While focusing on fixes and enhancements that matter to me, I also welcome other people's issue which might prove beneficial for both of us.
 
 Avoid wasting resources by starting your Minecraft server automatically when a player joins and stopping it when no one is online  
 _(for vanilla/modded on linux/windows/macos)_  
 
 <p align="center" >
-    <a href="https://github.com/gekware/minecraft-server-hibernation" >
-        <img src="https://raw.githubusercontent.com/gekware/minecraft-server-hibernation/c6a80ea835bea9f9a795c0805ab0e99ba326273c/res/icon/msh.png" >
+    <a href="https://github.com/kinuseka/minecraft-server-hibernation" >
+        <img src="https://raw.githubusercontent.com/kinuseka/minecraft-server-hibernation/c6a80ea835bea9f9a795c0805ab0e99ba326273c/res/icon/msh.png" >
     </a>
 </p>
 
-version: v2.5.0  
-Copyright (C) 2019-2023 [gekigek99](https://github.com/gekigek99)  
+Version: v2.6.0 
 
-Join our [discord server](https://discord.com/invite/guKB6ETeMF)!  
+## License and Attribution
+
+This is a fork of [Minecraft Server Hibernation](https://github.com/gekigek99/minecraft-server-hibernation) by [gekigek99](https://github.com/gekigek99), licensed under the [GPL-3.0 License](https://github.com/gekigek99/minecraft-server-hibernation/blob/master/LICENSE).
+
+This project is also licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
 -----
 ### RELEASES:
-Download the latest **releases** on [github](https://github.com/gekware/minecraft-server-hibernation/releases) (for linux, windows and macos)  
+Download the latest **releases** on [github](https://github.com/kinuseka/minecraft-server-hibernation/releases) (for linux, windows and macos)  
 
-_You can download msh from [gekware](https://msh.gekware.net/) or [compile the dev branch](#PROGRAM-COMPILATION) to use a more recent version, but note that it may still need to be tested_
+_You can download msh from the releases page or [compile the dev branch](#PROGRAM-COMPILATION) to use a more recent version, but note that it may still need to be tested_
 
 -----
 ### PROGRAM COMPILATION:
-This version was successfully compiled in go version 1.19  
+This version was successfully compiled in go version 1.24  
 Compilation procedure:
 ```command
-git clone https://github.com/gekware/minecraft-server-hibernation.git  
+git clone https://github.com/kinuseka/minecraft-server-hibernation.git  
 cd minecraft-server-hibernation/  
 git submodule update --init
 git checkout dev # execute only if you want to compile the dev branch
@@ -58,7 +63,7 @@ go build .
 _\* = it's not compulsory to modify this parameter_
 
 #### notes
-- _`msh-config.json` is not generated automatically. You will need to download it from the [releases](https://github.com/gekware/minecraft-server-hibernation/releases)._
+- _`msh-config.json` is not generated automatically. You will need to download it from the [releases](https://github.com/kinuseka/minecraft-server-hibernation/releases)._
 - _Automatically run msh at reboot._
 - _In `server.properties` set `server-ip=0.0.0.0` to avoid errors when msh tries to connect to the minecraft server._
 - _You must remove all braces from `msh-config.json`._  
@@ -67,7 +72,7 @@ _\* = it's not compulsory to modify this parameter_
 ### DEFINITIONS:
 - _Some of these parameters can be configured with command-line arguments (`msh --help` to know more) (user supplied arguments will override config)_  
 
-Location of server folder and executable. You can find protocol/version [here](https://wiki.vg/Protocol_version_numbers) (but msh should set them automatically):
+Location of server folder and executable. You can find protocol/version [here](https://minecraft.wiki/w/Protocol_version#List_of_protocol_versions:~:text=data%20version.-,%5Bshow%5D,-History%5Bedit) (but msh should set them automatically):
 ```yaml
 "Server": {
   "Folder": "{path/to/server/folder}"
@@ -171,32 +176,37 @@ PassthroughProtocol: Simple on/off switch that determines whether unknown protoc
 ```
 
 -----
-### CREDITS:  
+### CREDITS
 
-Author: [gekigek99](https://github.com/gekigek99)  
+#### MSH+ (Minecraft Server Hibernation Plus)
+- **Current Maintainer:** [Kinuseka](https://github.com/kinuseka)
+- **Repository:** [github.com/kinuseka/minecraft-server-hibernation](https://github.com/kinuseka/minecraft-server-hibernation)
 
-Contributors: [najtin](https://github.com/najtin), [f8ith](https://github.com/f8ith), [Br31zh](https://github.com/Br31zh), [someotherotherguy](https://github.com/someotherotherguy), [navidmafi](https://github.com/navidmafi), [cromefire](https://github.com/cromefire), [andreblanke](https://github.com/andreblanke), [KyleGospo](https://github.com/KyleGospo), [A-wels](https://github.com/A-wels), [dxomg](https://github.com/dxomg)  
+#### Original Project
+- **Original Author:** [gekigek99](https://github.com/gekigek99)
+- **Original Repository:** [github.com/gekigek99/minecraft-server-hibernation](https://github.com/gekigek99/minecraft-server-hibernation)
 
-Docker branch (outdated): [lubocode](https://github.com/lubocode/minecraft-server-hibernation)  
+#### Contributors to Original Project
+- [najtin](https://github.com/najtin)
+- [f8ith](https://github.com/f8ith)
+- [Br31zh](https://github.com/Br31zh)
+- [someotherotherguy](https://github.com/someotherotherguy)
+- [navidmafi](https://github.com/navidmafi)
+- [cromefire](https://github.com/cromefire)
+- [andreblanke](https://github.com/andreblanke)
+- [KyleGospo](https://github.com/KyleGospo)
+- [A-wels](https://github.com/A-wels)
+- [dxomg](https://github.com/dxomg)
 
-Pterodactyl egg: [BolverBlitz](https://github.com/gekware/minecraft-server-hibernation-pterodactyl-egg)  
-
-_If you wish to contribute, please create a pull request using the dev branch as the base for your changes_
+_MSH+ is a fork of the original Minecraft Server Hibernation project, now maintained independently. If you wish to contribute to MSH+, please create a pull request using the dev branch as the base for your changes._
 
 -----
-
-<p align="center" >
-    <a href="https://www.buymeacoffee.com/gekigek99" >
-        <img src="https://raw.githubusercontent.com/gekware/minecraft-server-hibernation/c6a80ea835bea9f9a795c0805ab0e99ba326273c/res/icon/buymeacoffee.png" >
-    </a>
-</p>
-
 <h4 align="center" >
-    Give a star to this repository on <a href="https://github.com/gekware/minecraft-server-hibernation" > github</a>!
+    Give a star to this repository on <a href="https://github.com/kinuseka/minecraft-server-hibernation" > github</a>!
 </h4>
 
 <p align="center" >
-    <a href="https://github.com/gekware/minecraft-server-hibernation/stargazers" >
-        <img src="https://reporoster.com/stars/gekware/minecraft-server-hibernation" >
+    <a href="https://github.com/kinuseka/minecraft-server-hibernation/stargazers" >
+        <img src="https://reporoster.com/stars/kinuseka/minecraft-server-hibernation" >
     </a>
 </p>
