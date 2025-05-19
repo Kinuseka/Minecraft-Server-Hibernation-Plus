@@ -348,18 +348,24 @@ func (c *Configuration) loadRuntime(confdef *Configuration) *errco.MshLog {
 	}
 
 	// load ms version/protocol
-	c.Server.Version, c.Server.Protocol, logMsh = c.getVersionInfo()
+	version, protocol, logMsh := c.getVersionInfo()
+	// Keep using user-defined values from config (default behavior)
 	if logMsh != nil {
 		// just log it since ms version/protocol are not vital for the connection with clients
 		logMsh.Log(true)
-	} else if c.Server.Version == "" || c.Server.Protocol == -1 {
+	} else if version == "" || protocol == -1 {
 		// found ms version/protocol are invalid
-		errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION_LOAD, "version (%s) and protocol (%d) are invalid", c.Server.Version, c.Server.Protocol)
-	} else if confdef.Server.Version != c.Server.Version || confdef.Server.Protocol != c.Server.Protocol {
-		// replace found ms version/protocol in default config,
-		confdef.Server.Version = c.Server.Version
-		confdef.Server.Protocol = c.Server.Protocol
-		configDefaultSave = true
+		errco.NewLogln(errco.TYPE_WAR, errco.LVL_3, errco.ERROR_VERSION_LOAD, "version (%s) and protocol (%d) are invalid", version, protocol)
+	} else {
+		// Only update when valid values are extracted
+		c.Server.Version = version
+		c.Server.Protocol = protocol
+
+		if confdef.Server.Version != c.Server.Version || confdef.Server.Protocol != c.Server.Protocol {
+			confdef.Server.Version = c.Server.Version
+			confdef.Server.Protocol = c.Server.Protocol
+			configDefaultSave = true
+		}
 	}
 
 	// load server icon
